@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Memory Manager — OS Project</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,300&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="scanlines"></div>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <div class="logo-title">VMMS</div>
+          <div class="logo-sub">Virtual Memory Management System</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-stats" id="headerStats">
+      <div class="hstat"><div class="hstat-val" id="hs-faults">0</div><div class="hstat-lbl">Page Faults</div></div>
+      <div class="hstat"><div class="hstat-val green" id="hs-hits">0</div><div class="hstat-lbl">Page Hits</div></div>
+      <div class="hstat"><div class="hstat-val orange" id="hs-ratio">0%</div><div class="hstat-lbl">Hit Ratio</div></div>
+      <div class="hstat"><div class="hstat-val blue" id="hs-algo">—</div><div class="hstat-lbl">Algorithm</div></div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot"></div>
+      <span class="status-text">SYSTEM ONLINE</span>
+    </div>
+  </header>
+
+  <!-- ── Nav ── -->
+  <nav class="nav">
+    <button class="tab active" data-tab="replacement">Page Replacement</button>
+    <button class="tab" data-tab="paging">Paging</button>
+    <button class="tab" data-tab="segmentation">Segmentation</button>
+    <button class="tab" data-tab="compare">Algorithm Compare</button>
+    <button class="tab" data-tab="fragmentation">Fragmentation</button>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- ════════════════════════════════════════════
+         TAB 1: Page Replacement
+    ════════════════════════════════════════════ -->
+    <div class="tab-content active" id="tab-replacement">
+      <div class="page-header">
+        <h2 class="page-title">Page Replacement Algorithms</h2>
+        <p class="page-desc">Simulate LRU, Optimal & FIFO with custom reference strings. Visualize page faults and demand paging in real-time.</p>
+      </div>
+
+      <div class="layout-sidebar">
+        <!-- Controls -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="dot blue"></span> Configuration
+          </div>
+          <div class="panel-body">
+            <label class="lbl">Algorithm</label>
+            <select class="input" id="algo">
+              <option value="lru">LRU — Least Recently Used</option>
+              <option value="optimal">Optimal (Bélády's)</option>
+              <option value="fifo">FIFO — First In First Out</option>
+            </select>
+
+            <label class="lbl">Number of Frames</label>
+            <input type="number" class="input" id="frames" value="3" min="1" max="10" />
+
+            <label class="lbl">Reference String <small>(space or comma separated)</small></label>
+            <input type="text" class="input" id="refString" value="7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1" />
+
+            <label class="lbl">Quick Presets</label>
+            <div class="preset-row">
+              <button class="chip" onclick="setPreset('7 0 1 2 0 3 0 4 2 3 0 3 2 1')">Classic</button>
+              <button class="chip" onclick="setPreset('1 2 3 4 1 2 5 1 2 3 4 5')">Belady</button>
+              <button class="chip" onclick="setPreset('0 1 2 3 0 1 4 0 1 2 3 4')">Hard</button>
+              <button class="chip" onclick="setPreset(genRandom())">Random</button>
+            </div>
+
+            <div class="btn-row" style="margin-top:20px">
+              <button class="btn btn-primary" onclick="runReplacement()">▶ Simulate</button>
+              <button class="btn btn-secondary" onclick="stepMode()">Step Mode</button>
+              <button class="btn btn-ghost" onclick="resetReplacement()">Reset</button>
+            </div>
+
+            <div id="stepControls" style="display:none;margin-top:12px">
+              <div class="btn-row">
+                <button class="btn btn-secondary" onclick="prevStep()">◀ Prev</button>
+                <button class="btn btn-secondary" onclick="nextStep()">Next ▶</button>
+                <span class="step-counter" id="stepCounter">Step 0/0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right side -->
+        <div>
+          <!-- Stats -->
+          <div class="stats-grid" id="repStats" style="display:none">
+            <div class="stat-card">
+              <div class="stat-val red" id="stat-faults">0</div>
+              <div class="stat-lbl">Page Faults</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val green" id="stat-hits">0</div>
+              <div class="stat-lbl">Page Hits</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val blue" id="stat-total">0</div>
+              <div class="stat-lbl">Total References</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val orange" id="stat-ratio">0%</div>
+              <div class="stat-lbl">Hit Ratio</div>
+            </div>
+          </div>
+
+          <!-- Reference string visual -->
+          <div class="panel" id="refPanel" style="display:none">
+            <div class="panel-head"><span class="dot green"></span> Reference String</div>
+            <div class="panel-body">
+              <div class="ref-string" id="refViz"></div>
+            </div>
+          </div>
+
+          <!-- Memory frames visual -->
+          <div class="panel" id="framesPanel" style="display:none">
+            <div class="panel-head"><span class="dot orange"></span> Physical Memory Frames</div>
+            <div class="panel-body">
+              <div class="frames-row" id="framesViz"></div>
+              <div class="legend">
+                <span class="leg-item"><span class="leg-dot hit"></span>Hit</span>
+                <span class="leg-item"><span class="leg-dot fault"></span>Fault</span>
+                <span class="leg-item"><span class="leg-dot empty"></span>Empty</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Steps table -->
+          <div class="panel" id="stepsPanel" style="display:none">
+            <div class="panel-head"><span class="dot blue"></span> Execution Trace</div>
+            <div class="panel-body" style="padding:0">
+              <div class="table-wrap">
+                <table class="tbl" id="stepsTable">
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Page</th><th>Frames State</th><th>Event</th><th>Victim</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stepsTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 2: Paging
+    ════════════════════════════════════════════ -->
+    <div class="tab-content" id="tab-paging">
+      <div class="page-header">
+        <h2 class="page-title">Paging & Page Table Visualization</h2>
+        <p class="page-desc">Visualize virtual-to-physical address mapping, page tables, and demand paging behavior.</p>
+      </div>
+
+      <div class="layout-sidebar">
+        <div class="panel">
+          <div class="panel-head"><span class="dot blue"></span> Paging Configuration</div>
+          <div class="panel-body">
+            <label class="lbl">Page Size (bytes)</label>
+            <select class="input" id="pageSz">
+              <option value="256">256 B</option>
+              <option value="512" selected>512 B</option>
+              <option value="1024">1 KB</option>
+              <option value="4096">4 KB</option>
+            </select>
+
+            <label class="lbl">Physical Frames Available</label>
+            <input type="number" class="input" id="physFrames" value="4" min="1" max="16" />
+
+            <label class="lbl">Virtual Pages (space separated)</label>
+            <input type="text" class="input" id="virtualPages" value="0 1 2 3 4 5 6 7" />
+
+            <label class="lbl">Address to Translate</label>
+            <input type="text" class="input" id="addrTranslate" placeholder="e.g. 1024" />
+            <div id="addrResult" class="addr-result" style="display:none"></div>
+
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="runPaging()">▶ Build Page Table</button>
+              <button class="btn btn-secondary" onclick="translateAddr()">Translate Address</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" id="pageTablePanel" style="display:none">
+            <div class="panel-head"><span class="dot green"></span> Page Table</div>
+            <div class="panel-body" style="padding:0">
+              <div class="table-wrap">
+                <table class="tbl">
+                  <thead>
+                    <tr><th>Virtual Page</th><th>Physical Frame</th><th>Valid Bit</th><th>Dirty Bit</th><th>Status</th></tr>
+                  </thead>
+                  <tbody id="pageTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div id="pagingVizPanel" class="panel" style="display:none;margin-top:20px">
+            <div class="panel-head"><span class="dot orange"></span> Memory Map Visualization</div>
+            <div class="panel-body">
+              <div id="pagingViz"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 3: Segmentation
+    ════════════════════════════════════════════ -->
+    <div class="tab-content" id="tab-segmentation">
+      <div class="page-header">
+        <h2 class="page-title">Memory Segmentation</h2>
+        <p class="page-desc">Define segments (Code, Stack, Heap, Data) and visualize how memory is allocated with base/limit registers.</p>
+      </div>
+
+      <div class="layout-sidebar">
+        <div class="panel">
+          <div class="panel-head"><span class="dot blue"></span> Segment Builder</div>
+          <div class="panel-body">
+            <div id="segInputs">
+              <div class="seg-row" data-idx="0">
+                <input type="text"   class="input seg-name" placeholder="Name (e.g. Code)" value="Code" />
+                <input type="number" class="input seg-size" placeholder="Size (bytes)" value="256" min="1" />
+                <button class="btn btn-ghost rm-seg" onclick="removeSeg(this)">✕</button>
+              </div>
+              <div class="seg-row" data-idx="1">
+                <input type="text"   class="input seg-name" placeholder="Name" value="Data" />
+                <input type="number" class="input seg-size" placeholder="Size (bytes)" value="128" min="1" />
+                <button class="btn btn-ghost rm-seg" onclick="removeSeg(this)">✕</button>
+              </div>
+              <div class="seg-row" data-idx="2">
+                <input type="text"   class="input seg-name" placeholder="Name" value="Stack" />
+                <input type="number" class="input seg-size" placeholder="Size (bytes)" value="512" min="1" />
+                <button class="btn btn-ghost rm-seg" onclick="removeSeg(this)">✕</button>
+              </div>
+              <div class="seg-row" data-idx="3">
+                <input type="text"   class="input seg-name" placeholder="Name" value="Heap" />
+                <input type="number" class="input seg-size" placeholder="Size (bytes)" value="384" min="1" />
+                <button class="btn btn-ghost rm-seg" onclick="removeSeg(this)">✕</button>
+              </div>
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn btn-secondary" onclick="addSeg()">+ Add Segment</button>
+              <button class="btn btn-primary"   onclick="runSegmentation()">▶ Simulate</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" id="segVizPanel" style="display:none">
+            <div class="panel-head"><span class="dot green"></span> Memory Layout</div>
+            <div class="panel-body">
+              <div id="segViz"></div>
+            </div>
+          </div>
+
+          <div class="panel" id="segTablePanel" style="display:none;margin-top:20px">
+            <div class="panel-head"><span class="dot orange"></span> Segment Table</div>
+            <div class="panel-body" style="padding:0">
+              <div class="table-wrap">
+                <table class="tbl">
+                  <thead>
+                    <tr><th>Seg #</th><th>Name</th><th>Base</th><th>Limit</th><th>Actual Size</th><th>Waste</th></tr>
+                  </thead>
+                  <tbody id="segTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 4: Algorithm Compare
+    ════════════════════════════════════════════ -->
+    <div class="tab-content" id="tab-compare">
+      <div class="page-header">
+        <h2 class="page-title">Algorithm Comparison</h2>
+        <p class="page-desc">Run LRU, Optimal, and FIFO side-by-side to evaluate performance across the same reference string.</p>
+      </div>
+
+      <div class="panel" style="max-width:600px;margin-bottom:24px">
+        <div class="panel-head"><span class="dot blue"></span> Comparison Setup</div>
+        <div class="panel-body">
+          <label class="lbl">Reference String</label>
+          <input type="text" class="input" id="cmpRef" value="7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1" />
+          <label class="lbl">Number of Frames</label>
+          <input type="number" class="input" id="cmpFrames" value="3" min="1" max="10" />
+          <button class="btn btn-primary" onclick="runCompare()">▶ Compare All</button>
+        </div>
+      </div>
+
+      <div id="compareResults" style="display:none">
+        <div class="compare-grid">
+          <div class="cmp-card" id="cmp-lru">
+            <div class="cmp-algo-name">LRU</div>
+            <div class="cmp-metric red"><span id="cmp-lru-faults">0</span><div class="cmp-lbl">Faults</div></div>
+            <div class="cmp-metric green"><span id="cmp-lru-hits">0</span><div class="cmp-lbl">Hits</div></div>
+            <div class="cmp-metric orange"><span id="cmp-lru-ratio">0%</span><div class="cmp-lbl">Hit Ratio</div></div>
+            <div class="cmp-bar-wrap"><div class="cmp-bar lru-bar" id="cmp-lru-bar"></div></div>
+          </div>
+          <div class="cmp-card winner-card" id="cmp-opt">
+            <div class="cmp-badge">OPTIMAL</div>
+            <div class="cmp-algo-name">Optimal</div>
+            <div class="cmp-metric red"><span id="cmp-opt-faults">0</span><div class="cmp-lbl">Faults</div></div>
+            <div class="cmp-metric green"><span id="cmp-opt-hits">0</span><div class="cmp-lbl">Hits</div></div>
+            <div class="cmp-metric orange"><span id="cmp-opt-ratio">0%</span><div class="cmp-lbl">Hit Ratio</div></div>
+            <div class="cmp-bar-wrap"><div class="cmp-bar opt-bar" id="cmp-opt-bar"></div></div>
+          </div>
+          <div class="cmp-card" id="cmp-fifo">
+            <div class="cmp-algo-name">FIFO</div>
+            <div class="cmp-metric red"><span id="cmp-fifo-faults">0</span><div class="cmp-lbl">Faults</div></div>
+            <div class="cmp-metric green"><span id="cmp-fifo-hits">0</span><div class="cmp-lbl">Hits</div></div>
+            <div class="cmp-metric orange"><span id="cmp-fifo-ratio">0%</span><div class="cmp-lbl">Hit Ratio</div></div>
+            <div class="cmp-bar-wrap"><div class="cmp-bar fifo-bar" id="cmp-fifo-bar"></div></div>
+          </div>
+        </div>
+
+        <!-- Visual bar chart -->
+        <div class="panel" style="margin-top:24px">
+          <div class="panel-head"><span class="dot green"></span> Fault Comparison Chart</div>
+          <div class="panel-body">
+            <canvas id="cmpChart" height="120"></canvas>
+          </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="panel" style="margin-top:20px">
+          <div class="panel-head"><span class="dot orange"></span> Analysis</div>
+          <div class="panel-body" id="cmpAnalysis"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         TAB 5: Fragmentation
+    ════════════════════════════════════════════ -->
+    <div class="tab-content" id="tab-fragmentation">
+      <div class="page-header">
+        <h2 class="page-title">Memory Fragmentation Simulator</h2>
+        <p class="page-desc">Simulate internal and external fragmentation. Allocate, free, and compact memory blocks interactively.</p>
+      </div>
+
+      <div class="layout-sidebar">
+        <div class="panel">
+          <div class="panel-head"><span class="dot blue"></span> Memory Configuration</div>
+          <div class="panel-body">
+            <label class="lbl">Total Memory (blocks)</label>
+            <input type="number" class="input" id="totalBlocks" value="32" min="8" max="64" />
+
+            <label class="lbl">Allocation Strategy</label>
+            <select class="input" id="allocStrategy">
+              <option value="first">First Fit</option>
+              <option value="best">Best Fit</option>
+              <option value="worst">Worst Fit</option>
+            </select>
+
+            <label class="lbl">Allocate Size (blocks)</label>
+            <div style="display:flex;gap:8px">
+              <input type="number" class="input" id="allocSize" value="4" min="1" style="margin:0" />
+              <button class="btn btn-primary" onclick="allocMemory()" style="white-space:nowrap">Allocate</button>
+            </div>
+
+            <div style="margin-top:14px">
+              <div class="btn-row">
+                <button class="btn btn-secondary" onclick="freeRandom()">Free Random</button>
+                <button class="btn btn-success" onclick="compactMemory()">Compact</button>
+                <button class="btn btn-ghost" onclick="resetFragmentation()">Reset</button>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top:20px;background:var(--bg3)">
+              <div class="panel-head"><span class="dot orange"></span> Stats</div>
+              <div class="panel-body" style="padding:14px">
+                <div class="mini-stat">Free Blocks: <span id="frag-free" class="green">0</span></div>
+                <div class="mini-stat">Used Blocks: <span id="frag-used" class="blue">0</span></div>
+                <div class="mini-stat">Fragmentation: <span id="frag-pct" class="red">0%</span></div>
+                <div class="mini-stat">Largest Free: <span id="frag-largest" class="orange">0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <div class="panel-head"><span class="dot green"></span> Memory Map</div>
+            <div class="panel-body">
+              <div id="fragViz" class="frag-grid"></div>
+              <div class="legend" style="margin-top:16px">
+                <span class="leg-item"><span class="leg-dot" style="background:#0080ff"></span>Allocated</span>
+                <span class="leg-item"><span class="leg-dot" style="background:#1a2a3a"></span>Free</span>
+                <span class="leg-item"><span class="leg-dot" style="background:#ff6b35"></span>Fragmented</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:20px">
+            <div class="panel-head"><span class="dot blue"></span> Allocation Log</div>
+            <div class="panel-body" style="padding:0;max-height:200px;overflow-y:auto">
+              <div id="allocLog" class="log-area"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <span>Virtual Memory Management System</span>
+    <span class="footer-sep">|</span>
+    <span>Operating Systems Project</span>
+    <span class="footer-sep">|</span>
+    <span>Node.js + HTML/CSS/JS</span>
+    <span class="footer-sep">|</span>
+    <span>LRU · Optimal · FIFO · Paging · Segmentation</span>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

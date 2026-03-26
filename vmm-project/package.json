@@ -1,0 +1,16 @@
+{
+  "name": "virtual-memory-management-system",
+  "version": "1.0.0",
+  "description": "OS Project: Virtual Memory Management Tool — Paging, Segmentation, Page Replacement Algorithms",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "keywords": ["operating-systems", "virtual-memory", "paging", "LRU", "page-replacement"],
+  "author": "OS Project",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
