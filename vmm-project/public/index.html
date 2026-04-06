@@ -1,51 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>DOM Practice</title>
-    <style>
-        .box {
-            width: 200px;
-            height: 100px;
-            background-color: lightgray;
-            text-align: center;
-            line-height: 100px;
-            margin-top: 10px;
-        }
-
-        .active {
-            background-color: green;
-            color: white;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Memory Management Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <header>
+    <h1>Virtual Memory Management Visualizer</h1>
+    <p>Paging, Segmentation, Fragmentation, LRU, and Optimal Page Replacement</p>
+  </header>
 
-    <h1 id="heading">Hello World</h1>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="paging">Paging & Replacement</button>
+    <button class="tab-btn" data-tab="segmentation">Segmentation</button>
+    <button class="tab-btn" data-tab="fragmentation">Fragmentation</button>
+  </nav>
 
-    <button id="changeText">Change Text</button>
-    <button id="changeColor">Change Color</button>
-    <button id="addElement">Add Element</button>
+  <main>
+    <!-- Paging Section -->
+    <section id="paging" class="tab-content active">
+      <h2>Paging and Page Replacement</h2>
 
-    <div id="box" class="box">Box</div>
+      <div class="card">
+        <label>Page Reference String (comma separated)</label>
+        <input type="text" id="referenceString" value="7,0,1,2,0,3,0,4,2,3,0,3,2" />
 
-    <script>
-        // Change text
-        document.getElementById("changeText").onclick = function() {
-            document.getElementById("heading").innerText = "DOM is Awesome!";
-        };
+        <label>Number of Frames</label>
+        <input type="number" id="frameCount" value="3" min="1" />
 
-        // Change color using class toggle
-        document.getElementById("changeColor").onclick = function() {
-            document.getElementById("box").classList.toggle("active");
-        };
+        <div class="button-group">
+          <button onclick="runAlgorithm('LRU')">Run LRU</button>
+          <button onclick="runAlgorithm('Optimal')">Run Optimal</button>
+          <button onclick="clearPaging()">Reset</button>
+        </div>
+      </div>
 
-        // Add new element
-        document.getElementById("addElement").onclick = function() {
-            let newPara = document.createElement("p");
-            newPara.innerText = "New paragraph added!";
-            document.body.appendChild(newPara);
-        };
-    </script>
+      <div class="card">
+        <h3>Simulation Output</h3>
+        <div id="pagingSummary"></div>
+        <div id="pagingTableContainer"></div>
+      </div>
+    </section>
 
+    <!-- Segmentation Section -->
+    <section id="segmentation" class="tab-content">
+      <h2>Segmentation Simulator</h2>
+
+      <div class="card">
+        <label>Segment Bases (comma separated)</label>
+        <input type="text" id="segmentBases" value="1000,2000,3000" />
+
+        <label>Segment Limits (comma separated)</label>
+        <input type="text" id="segmentLimits" value="400,300,500" />
+
+        <label>Segment Number</label>
+        <input type="number" id="segmentNumber" value="1" min="0" />
+
+        <label>Offset</label>
+        <input type="number" id="segmentOffset" value="120" min="0" />
+
+        <div class="button-group">
+          <button onclick="runSegmentation()">Translate Address</button>
+          <button onclick="clearSegmentation()">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Segmentation Result</h3>
+        <div id="segmentationOutput"></div>
+      </div>
+    </section>
+
+    <!-- Fragmentation Section -->
+    <section id="fragmentation" class="tab-content">
+      <h2>Memory Fragmentation Simulator</h2>
+
+      <div class="card">
+        <label>Memory Block Sizes (comma separated)</label>
+        <input type="text" id="blockSizes" value="100,500,200,300,600" />
+
+        <label>Process Sizes (comma separated)</label>
+        <input type="text" id="processSizes" value="212,417,112,426" />
+
+        <div class="button-group">
+          <button onclick="runFragmentation()">Simulate Allocation</button>
+          <button onclick="clearFragmentation()">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Fragmentation Output</h3>
+        <div id="fragmentationOutput"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>OS Project - Virtual Memory Management Tool</p>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
