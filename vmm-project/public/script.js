@@ -1,4 +1,4 @@
-// Tab switching
+
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 
@@ -12,7 +12,7 @@ tabButtons.forEach(button => {
   });
 });
 
-// Utility
+
 function parseInputArray(value) {
   return value
     .split(",")
@@ -21,7 +21,7 @@ function parseInputArray(value) {
     .map(Number);
 }
 
-// Paging Algorithms
+
 function runAlgorithm(type) {
   const referenceString = parseInputArray(document.getElementById("referenceString").value);
   const frameCount = parseInt(document.getElementById("frameCount").value);
@@ -170,7 +170,7 @@ function clearPaging() {
   document.getElementById("pagingTableContainer").innerHTML = "";
 }
 
-// Segmentation
+
 function runSegmentation() {
   const bases = parseInputArray(document.getElementById("segmentBases").value);
   const limits = parseInputArray(document.getElementById("segmentLimits").value);
@@ -211,7 +211,7 @@ function clearSegmentation() {
   document.getElementById("segmentationOutput").innerHTML = "";
 }
 
-// Fragmentation
+
 function runFragmentation() {
   const blocks = parseInputArray(document.getElementById("blockSizes").value);
   const processes = parseInputArray(document.getElementById("processSizes").value);
